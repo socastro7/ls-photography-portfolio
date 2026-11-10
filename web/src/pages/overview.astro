@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SITE, WORK, SERIES, src, pad, alt, url } from '../data/site';
+import { SITE, WORK, SERIES, src, srcset, pad, alt, url } from '../data/site';
 const counts = Object.fromEntries(SERIES.map((s) => [s, WORK.filter((p) => p.serie === s).length]));
 const series = [...SERIES].sort((a, b) => counts[b] - counts[a]);
 const gallery = {
@@ -35,7 +35,7 @@ const gallery = {
   <main id="main" class="grid">
     <h1 class="sr">Index of work</h1>
     {WORK.map((p, i) => (
-      <a href={url(`/#${i + 1}`)} class="cell" data-serie={p.serie}>
+      <a href={url(`/#${i + 1}`)} class="cell" data-serie={p.serie} data-n={i + 1} data-src={src(p.id, 1280)} data-srcset={srcset(p.id)} data-alt={alt(p)}>
         <span class="thumb" style={`aspect-ratio:${p.w}/${p.h}`}>
           <img src={src(p.id, 640)} alt={alt(p)} width={p.w} height={p.h} loading="lazy" decoding="async" />
         </span>
@@ -43,6 +43,18 @@ const gallery = {
       </a>
     ))}
   </main>
+
+  <!-- Photo detail: opens over the Index, works like the Fit view -->
+  <div class="lb" role="dialog" aria-modal="true" aria-label="Photo" hidden>
+    <div class="lb__stage"><img class="lb__img" alt="" sizes="100vw" /></div>
+    <button class="lb__hit lb__hit--prev" data-lb="-1" aria-label="Previous image"></button>
+    <button class="lb__hit lb__hit--next" data-lb="1" aria-label="Next image"></button>
+    <div class="corner corner--tc"><button class="u-hover lb__close">Close</button></div>
+    <div class="corner corner--bl"><button class="u-hover" data-lb="-1">Prev</button></div>
+    <div class="corner corner--bc lb__cap" aria-live="polite"><span class="lb__text"></span><span class="mute lb__count"></span></div>
+    <div class="corner corner--br"><button class="u-hover" data-lb="1">Next</button></div>
+    <div class="lb__cursor" aria-hidden="true"></div>
+  </div>
 </Base>
 
 <style>
@@ -90,6 +102,29 @@ const gallery = {
     .grid { padding: 80px var(--gutter) 170px; grid-template-columns: 1fr 1fr; gap: 28px 10px; }
   }
 
+  /* ── Photo detail (Fit-like) ── */
+  .lb { position: fixed; inset: 0; z-index: 25; background: var(--paper); user-select: none; }
+  .lb[hidden] { display: none; }
+  .lb__stage {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr); padding: 46px var(--gutter);
+  }
+  .lb__img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+  .lb__hit { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 1; cursor: none; }
+  .lb__hit--prev { left: 0; }
+  .lb__hit--next { right: 0; }
+  .lb .corner { z-index: 31; }
+  .lb__cap { gap: 0.6em; white-space: nowrap; }
+  .lb__cursor {
+    position: fixed; top: 0; left: 0; z-index: 40; pointer-events: none; white-space: nowrap;
+    transform: translate(-50%, -50%); opacity: 0; mix-blend-mode: difference; color: #fff;
+  }
+  /* while open: no page scroll, mobile filter button hidden */
+  :global(html.lb-open) { overflow: hidden; }
+  :global(html.lb-open) .filter-toggle { display: none; }
+  @media (hover: none) { .lb__hit { cursor: auto; } .lb__cursor { display: none; } }
+  @media (max-width: 700px) { .lb__stage { padding: 46px 0; } }
+
   .cell { display: flex; flex-direction: column; gap: 6px; }
   .cell.is-out { display: none; }
   .thumb { display: block; width: 100%; background: #ebeae6; }
@@ -132,6 +167,122 @@ const gallery = {
       gsap.fromTo(shown, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.015, ease: 'power2.out' });
     }),
   );
+
+  /* ── Photo detail ── */
+  const html = document.documentElement;
+  const lb = document.querySelector<HTMLElement>('.lb')!;
+  const lbImg = lb.querySelector<HTMLImageElement>('.lb__img')!;
+  const lbText = lb.querySelector<HTMLElement>('.lb__text')!;
+  const lbCount = lb.querySelector<HTMLElement>('.lb__count')!;
+  const lbCursor = lb.querySelector<HTMLElement>('.lb__cursor')!;
+  const pad = (n: number) => String(n).padStart(3, '0');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let list: HTMLElement[] = [];
+  let at = 0;
+  let hoverDir = 0;
+  let prevInfo = '';
+
+  const visible = () => cells.filter((c) => !c.classList.contains('is-out'));
+  const wrapI = (i: number) => (i + list.length) % list.length;
+  const preload = (c: HTMLElement) => {
+    const im = new Image();
+    im.sizes = '100vw';
+    im.srcset = c.dataset.srcset!;
+    im.src = c.dataset.src!;
+  };
+  const cursorLabel = () => {
+    if (!hoverDir) return;
+    const n = Number(list[wrapI(at + hoverDir)].dataset.n);
+    lbCursor.textContent = hoverDir < 0 ? `← ${pad(n)}` : `${pad(n)} →`;
+  };
+
+  const render = (i: number, dir = 1, animate = true) => {
+    at = wrapI(i);
+    const c = list[at];
+    const swap = () => {
+      lbImg.srcset = c.dataset.srcset!;
+      lbImg.src = c.dataset.src!;
+      lbImg.alt = c.dataset.alt!;
+      lbText.textContent = `${pad(Number(c.dataset.n))}. ${c.dataset.serie}`;
+      lbCount.textContent = `/ ${pad(list.length)}`;
+    };
+    if (!animate || reduce) swap();
+    else
+      gsap.timeline()
+        .to(lbImg, { opacity: 0, x: -12 * dir, duration: 0.2, ease: 'power2.in' })
+        .add(swap)
+        .fromTo(lbImg, { opacity: 0, x: 12 * dir }, { opacity: 1, x: 0, duration: 0.45, ease: 'power2.out' });
+    preload(list[wrapI(at + 1)]);
+    preload(list[wrapI(at - 1)]);
+    cursorLabel();
+  };
+
+  const open = (cell: HTMLElement) => {
+    list = visible();
+    prevInfo = html.dataset.info ?? '';
+    html.dataset.info = 'mid';
+    html.classList.add('lb-open');
+    lb.hidden = false;
+    render(list.indexOf(cell), 1, false);
+    if (!reduce) gsap.fromTo(lb, { opacity: 0 }, { opacity: 1, duration: 0.35, ease: 'power2.out' });
+    history.pushState({ lb: true }, '');
+  };
+  const close = (fromHistory = false) => {
+    if (lb.hidden) return;
+    lb.hidden = true;
+    html.classList.remove('lb-open');
+    html.dataset.info = prevInfo;
+    gsap.set(lbCursor, { opacity: 0 });
+    hoverDir = 0;
+    if (!fromHistory && history.state?.lb) history.back();
+  };
+
+  cells.forEach((c) =>
+    c.addEventListener('click', (e) => {
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new-tab clicks still go to Work
+      e.preventDefault();
+      open(c);
+    }),
+  );
+  lb.querySelectorAll<HTMLElement>('[data-lb]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const d = Number(b.dataset.lb);
+      render(at + d, d);
+    }),
+  );
+  lb.querySelector('.lb__close')!.addEventListener('click', () => close());
+  addEventListener('popstate', () => close(true));
+  addEventListener('keydown', (e) => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); render(at + 1, 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); render(at - 1, -1); }
+  });
+
+  // swipe
+  let sx = 0;
+  let sy = 0;
+  lb.addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+      const d = dx < 0 ? 1 : -1;
+      render(at + d, d);
+    }
+  });
+
+  // cursor showing the target number, like Fit
+  if (matchMedia('(hover: hover)').matches) {
+    const xTo = gsap.quickTo(lbCursor, 'x', { duration: 0.35, ease: 'power3' });
+    const yTo = gsap.quickTo(lbCursor, 'y', { duration: 0.35, ease: 'power3' });
+    lb.querySelectorAll<HTMLElement>('.lb__hit').forEach((h) => {
+      const d = Number(h.dataset.lb);
+      h.addEventListener('mousemove', (e) => { xTo(e.clientX); yTo(e.clientY); hoverDir = d; cursorLabel(); });
+      h.addEventListener('mouseenter', () => { hoverDir = d; cursorLabel(); gsap.to(lbCursor, { opacity: 1, duration: 0.2 }); });
+      h.addEventListener('mouseleave', () => { hoverDir = 0; gsap.to(lbCursor, { opacity: 0, duration: 0.2 }); });
+    });
+  }
 
   // thumbnails develop in gently, like a contact sheet
   gsap.from(cells.slice(0, 40), { opacity: 0, duration: 0.9, stagger: 0.02, ease: 'power1.out' });
