@@ -23,8 +23,7 @@
 }
 
 /* Variantes tipográficas (probador abajo a la izquierda) */
-html[data-type="serif"] { --font: var(--serif); --fs: 12.5px; --track: 0; }
-html[data-type="mono"]  { --font: var(--mono);  --fs: 10.5px; --track: -0.01em; }
+html[data-type="mono"]  { --font: var(--mono);  --fs: 10.5px; --track: -0.045em; }
 html[data-type="mono"] .caps,
 html[data-type="sans"] .caps { text-transform: uppercase; }
 
@@ -73,6 +72,7 @@ ul { list-style: none; }
 .corner--bl { bottom: 0; left: 0; }
 .corner--br { bottom: 0; right: 0; }
 .corner--bc { bottom: 0; left: 50%; transform: translateX(-50%); }
+.corner--tc { top: 0; left: 50%; transform: translateX(-50%); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }

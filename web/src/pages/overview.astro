@@ -1,13 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SITE, WORK, SERIES, src, pad, alt } from '../data/site';
+import { SITE, WORK, SERIES, src, pad, alt, url } from '../data/site';
 const counts = Object.fromEntries(SERIES.map((s) => [s, WORK.filter((p) => p.serie === s).length]));
 const series = [...SERIES].sort((a, b) => counts[b] - counts[a]);
 const gallery = {
   '@context': 'https://schema.org',
   '@type': 'ImageGallery',
   name: `${SITE.name} — Index`,
-  author: { '@id': new URL('/#person', Astro.site).href },
+  author: { '@id': new URL(url('/#person'), Astro.site).href },
   image: WORK.map((p) => ({
     '@type': 'ImageObject',
     contentUrl: new URL(src(p.id, 2400), Astro.site).href,
@@ -31,7 +31,7 @@ const gallery = {
   <main id="main" class="grid">
     <h1 class="sr">Index of work</h1>
     {WORK.map((p, i) => (
-      <a href={`/#${i + 1}`} class="cell" data-serie={p.serie}>
+      <a href={url(`/#${i + 1}`)} class="cell" data-serie={p.serie}>
         <span class="thumb" style={`aspect-ratio:${p.w}/${p.h}`}>
           <img src={src(p.id, 640)} alt={alt(p)} width={p.w} height={p.h} loading="lazy" decoding="async" />
         </span>

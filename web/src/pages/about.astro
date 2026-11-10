@@ -1,6 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SITE } from '../data/site';
+import { SITE, url } from '../data/site';
 
 // Sourced from the POSTAL POSTAL interview and from logos visible in the portfolio. Confirm with Lucila.
 const clients = ['Jazmín Chebar', 'Adidas', 'Prüne', 'La Rando', 'Mariacher', 'Valentina Schuchner', 'Miista', 'Laagam', 'Sadæls'];
@@ -9,7 +9,7 @@ const press = ["L'Officiel", 'Rolling Stone', 'Crop', 'Postal Postal'];
 const profile = {
   '@context': 'https://schema.org',
   '@type': 'ProfilePage',
-  mainEntity: { '@id': new URL('/#person', Astro.site).href },
+  mainEntity: { '@id': new URL(url('/#person'), Astro.site).href },
 };
 ---
 <Base

@@ -6,12 +6,16 @@ export const SITE = {
   name: 'Lucila Schuchner',
   role: 'Fashion photographer',
   place: 'Buenos Aires — Spain',
+  // Short line under the name in the header (design phase: wording TBD).
+  // Lines under the name in the header
+  tagline: ['photographer', 'based in Barcelona', 'available for commissions worldwide'],
   description:
     'Lucila Schuchner is an Argentine fashion photographer working between the staged and the spontaneous. Editorials, campaigns and personal projects on digital and film.',
   instagram: 'https://www.instagram.com/lucila.schuchner/',
   igHandle: '@lucila.schuchner',
   // Fill in once confirmed; hidden while empty.
-  email: '',
+  email: 'lucila.schuchner@gmail.com',
+  phone: '+34 555 55 55',
   // Default social share image (served from /public/img).
   ogImage: '',
 };
@@ -20,7 +24,11 @@ export const ALL: Photo[] = photos as Photo[];
 export const WORK: Photo[] = ALL.filter((p) => p.work);
 export const SERIES: string[] = [...new Set(ALL.map((p) => p.serie))];
 
-export const src = (id: string, w: 640 | 1280 | 2400) => `/img/${id}-${w}.webp`;
+// Prefixes a root path with the deploy base (e.g. /ls-photography-portfolio on GitHub Pages)
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, '');
+export const url = (path: string) => `${BASE}${path}` || '/';
+
+export const src = (id: string, w: 640 | 1280 | 2400) => url(`/img/${id}-${w}.webp`);
 export const srcset = (id: string) =>
   `${src(id, 640)} 640w, ${src(id, 1280)} 1280w, ${src(id, 2400)} 2400w`;
 

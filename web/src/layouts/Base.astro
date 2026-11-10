@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { SITE } from '../data/site';
+import { SITE, url } from '../data/site';
 
 interface Props {
   title?: string;
@@ -20,7 +20,7 @@ const ogImage = new URL(image, Astro.site);
 const person = {
   '@context': 'https://schema.org',
   '@type': 'Person',
-  '@id': new URL('/#person', Astro.site).href,
+  '@id': new URL(url('/#person'), Astro.site).href,
   name: SITE.name,
   jobTitle: SITE.role,
   nationality: 'Argentine',
@@ -29,14 +29,16 @@ const person = {
   ...(SITE.email ? { email: `mailto:${SITE.email}` } : {}),
 };
 
+const { email, phone } = SITE;
+
 const nav = [
-  { href: '/', label: 'Work', key: 'work' },
-  { href: '/overview', label: 'Index', key: 'index' },
-  { href: '/about', label: 'About', key: 'about' },
+  { href: url('/'), label: 'Work', key: 'work' },
+  { href: url('/overview'), label: 'Index', key: 'index' },
+  { href: url('/about'), label: 'About', key: 'about' },
 ];
 ---
 <!doctype html>
-<html lang="en" data-type="sans">
+<html lang="en" data-type="sans" data-menu="corners" data-info="top">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -55,8 +57,9 @@ const nav = [
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="sitemap" href="/sitemap-index.xml" />
+    <link rel="icon" href={url('/favicon.svg')} type="image/svg+xml" />
+    <link rel="sitemap" href={url('/sitemap-index.xml')} />
+    {import.meta.env.PUBLIC_NOINDEX && <meta name="robots" content="noindex, nofollow" />}
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -67,7 +70,11 @@ const nav = [
     <script is:inline>
       try {
         var t = localStorage.getItem('ls-type');
-        if (t) document.documentElement.dataset.type = t;
+        if (t && t !== 'serif') document.documentElement.dataset.type = t;
+        var m = localStorage.getItem('ls-menu');
+        if (m === 'corners' || m === 'column') document.documentElement.dataset.menu = m;
+        var f = localStorage.getItem('ls-info');
+        if (f) document.documentElement.dataset.info = f;
       } catch (e) {}
     </script>
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd ? [person, jsonLd] : person)} />
@@ -75,42 +82,92 @@ const nav = [
   </head>
   <body class={bodyClass}>
     <a href="#main" class="sr skip">Skip to content</a>
-    <header class="corner corner--tl">
-      <a href="/" class="u-hover" aria-label={`${SITE.name} — home`}>{SITE.name}</a>
+    <header class="corner corner--tl masthead">
+      <a href={url('/')} class="u-hover masthead__name caps" aria-label={`${SITE.name} — home`}>{SITE.name}</a>
+      <div class="masthead__info">
+      <p class="masthead__tag mute">{SITE.tagline.map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>
+      <address class="masthead__contact">
+        <a class="u-hover" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a><br />
+        <a class="u-hover" href={`mailto:${email}`}>{email}</a>
+      </address>
+      </div>
+      <nav class="masthead__nav caps" aria-label="Main">
+        {nav.map((n) => (
+          <a href={n.href} class:list={['u-hover', { 'is-current': current === n.key }]} aria-current={current === n.key ? 'page' : undefined}>{n.label}</a>
+        ))}
+      </nav>
     </header>
-    <nav class="corner corner--tr" aria-label="Main">
-      {nav.map((n) => (
-        <a href={n.href} class:list={['u-hover', { 'is-current': current === n.key }]} aria-current={current === n.key ? 'page' : undefined}>{n.label}</a>
-      ))}
-    </nav>
 
     <slot />
 
     <!-- Type tester for the design phase: remove once the typeface is chosen -->
     <div class="typetest corner" role="group" aria-label="Try typeface">
       <button data-type="sans">Aa sans</button>
-      <button data-type="serif">Aa serif</button>
       <button data-type="mono">Aa mono</button>
+      <span class="mute" aria-hidden="true">|</span>
+      <button data-menu="corners">Menu A</button>
+      <button data-menu="column">D</button>
+      <span class="mute" aria-hidden="true">|</span>
+      <button data-info="top">Text top</button>
+      <button data-info="mid">mid</button>
     </div>
 
     <style>
       .skip:focus { position: fixed; top: 8px; left: 8px; width: auto; height: auto; clip: auto; z-index: 99; background: var(--paper); padding: 6px; }
-      .typetest { left: 50%; top: 0; transform: translateX(-50%); gap: 0.9em; }
+      .typetest { left: 50%; bottom: 0; transform: translateX(-50%); gap: 0.9em; }
       .typetest button { color: var(--mute); }
       .typetest button:hover, .typetest button.on { color: var(--ink); }
       .typetest button[data-type='sans'] { font-family: var(--sans); }
-      .typetest button[data-type='serif'] { font-family: var(--serif); font-style: italic; }
       .typetest button[data-type='mono'] { font-family: var(--mono); }
       @media (max-width: 700px) { .typetest { display: none; } }
+
+      /* ── Masthead: name + tagline + menu. Positions switch via html[data-menu] ── */
+      .masthead {
+        font-size: calc(var(--fs) + 1px); /* name, menu, description, contact: 1px above the rest */
+        display: grid;
+        grid-template-areas: 'name' 'info' 'nav';
+        justify-items: start;
+        row-gap: 0;
+        column-gap: 1.2em;
+      }
+      .masthead__name { grid-area: name; }
+      .masthead__info { grid-area: info; margin-top: 2.7em; }
+      .masthead__contact { margin-top: 1.35em; font-style: normal; }
+      /* Description + contact centred on the vertical axis */
+      :global(html[data-info='mid']) .masthead__info {
+        position: fixed; left: 0; top: 50%; transform: translateY(-50%);
+        padding: 0 var(--gutter); margin: 0;
+      }
+      .masthead__nav { grid-area: nav; display: flex; gap: 1.2em; }
+      .caps { text-transform: uppercase; letter-spacing: 0.04em; }
+
+      /* A: menu alone in the top-right corner */
+      :global(html[data-menu='corners']) .masthead__nav,
+      :global(html[data-menu='column']) .masthead__nav {
+        position: fixed; top: 0; right: 0; padding: var(--gutter);
+      }
+      /* D: top-right, one item per line, right-aligned */
+      :global(html[data-menu='column']) .masthead__nav { flex-direction: column; align-items: flex-end; gap: 0.2em; }
+      /* Current page: tighter underline */
+      .masthead__nav .is-current { text-underline-offset: 1.5px; }
+
+      @media (max-width: 700px) {
+        :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0; margin: 0; }
+      }
     </style>
     <script>
       const root = document.documentElement;
       const btns = document.querySelectorAll<HTMLButtonElement>('.typetest button');
-      const mark = () => btns.forEach((b) => b.classList.toggle('on', b.dataset.type === root.dataset.type));
+      const mark = () =>
+        btns.forEach((b) =>
+          b.classList.toggle('on', ['type', 'menu', 'info'].some((k) => b.dataset[k] && b.dataset[k] === root.dataset[k])),
+        );
       btns.forEach((b) =>
         b.addEventListener('click', () => {
-          root.dataset.type = b.dataset.type!;
-          try { localStorage.setItem('ls-type', b.dataset.type!); } catch (e) {}
+          const key = (['type', 'menu', 'info'] as const).find((k) => b.dataset[k])!;
+          const store = `ls-${key}`;
+          root.dataset[key] = b.dataset[key]!;
+          try { localStorage.setItem(store, b.dataset[key]!); } catch (e) {}
           mark();
         }),
       );

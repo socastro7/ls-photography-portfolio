@@ -28,7 +28,8 @@ for (let i = 0, k = 0; i < total; k++) {
       var q = new URLSearchParams(location.search).get('view');
       var m = q;
       try { m = q || localStorage.getItem('ls-mode'); } catch (e) {}
-      if (m === 'scroll') document.documentElement.classList.add('mode-scroll');
+      // Default view is Fill (continuous scroll); Fit only when chosen
+      if (m !== 'fit') document.documentElement.classList.add('mode-scroll');
     })();
   </script>
 
@@ -89,12 +90,16 @@ for (let i = 0, k = 0; i < total; k++) {
   <div class="corner corner--bl ui">
     <button class="u-hover" data-dir="-1">Prev</button>
   </div>
+  <div class="corner corner--tc ui modes" role="group" aria-label="View">
+    <button class="u-hover" data-mode="scroll">Fill</button>
+    <span class="mute" aria-hidden="true">|</span>
+    <button class="u-hover" data-mode="fit">Fit</button>
+  </div>
   <div class="corner corner--bc ui caption" aria-live="polite">
     <span class="caption__roll"><span class="caption__text">{pad(1)}. {WORK[0].serie}</span></span>
     <span class="mute caption__count">/ {pad(total)}</span>
   </div>
   <div class="corner corner--br ui">
-    <button class="u-hover js-mode" aria-pressed="false">Full</button>
     <button class="u-hover" data-dir="1">Next</button>
   </div>
 
@@ -103,9 +108,16 @@ for (let i = 0, k = 0; i < total; k++) {
 
 <style is:global>
   html:not(.mode-scroll) body.is-viewer { overflow: hidden; }
-  /* In scroll mode the type floats over the images, in the corners */
-  html.mode-scroll .corner { color: #fff; mix-blend-mode: difference; }
-  html.mode-scroll .corner .mute { color: #fff; opacity: 0.6; }
+  /* Full mode: no visible scrollbar (still scrollable) */
+  html.mode-scroll { scrollbar-width: none; }
+  html.mode-scroll::-webkit-scrollbar { display: none; }
+
+  /* Full mode: type is rendered normally over the paper (same as Fit). Only the pieces
+     that are actually over a photo switch to the inverting blend (toggled from JS), because
+     blending makes Chrome on Windows drop ClearType and the letters look bolder. */
+  html.mode-scroll .on-img { color: #fff; mix-blend-mode: difference; }
+  html.mode-scroll .on-img .mute,
+  html.mode-scroll .on-img.mute { color: #fff; opacity: 0.6; }
 </style>
 
 <style>
@@ -148,6 +160,7 @@ for (let i = 0, k = 0; i < total; k++) {
   .row__cap { display: flex; gap: 1.4em; }
 
   /* full-bleed: edge to edge, as big as the screen allows */
+  .tile { overflow: hidden; } /* clips the reveal zoom */
   .row--bleed .tile { width: 100vw; }
   /* centred landscape */
   .row--wide .tile { width: min(68vw, 150svh); }
@@ -184,6 +197,13 @@ for (let i = 0, k = 0; i < total; k++) {
   @media (hover: none) { .hit { cursor: auto; } }
 
   .caption { gap: 0.6em; white-space: nowrap; }
+  /* the design tester sits at the bottom centre, so the caption goes one line above it */
+  @media (min-width: 701px) { .caption { bottom: calc(var(--fs) * var(--lh) + 0.3em); } }
+  .modes { gap: 0.6em; }
+  .modes button { color: var(--mute); }
+  .modes button.on { color: var(--ink); }
+  :global(html.mode-scroll) .modes.on-img button { color: #fff; opacity: 0.6; }
+  :global(html.mode-scroll) .modes.on-img button.on { opacity: 1; }
   .caption__roll { display: inline-block; overflow: hidden; height: calc(var(--fs) * var(--lh)); vertical-align: top; }
   .caption__text { display: inline-block; }
 
@@ -200,6 +220,11 @@ for (let i = 0, k = 0; i < total; k++) {
     color: #fff;
   }
   @media (hover: none) { .cursor { display: none; } }
+  /* Fill mode: the "Scroll" label replaces the pointer (except over links/buttons) */
+  @media (hover: hover) {
+    :global(html.mode-scroll) body { cursor: none; }
+    :global(html.mode-scroll) :is(a, button, .corner) { cursor: pointer; }
+  }
 </style>
 
 <script>
@@ -210,7 +235,7 @@ for (let i = 0, k = 0; i < total; k++) {
   const imgs = slides.map((s) => s.querySelector('img')!);
   const total = slides.length;
   const captionText = document.querySelector<HTMLElement>('.caption__text')!;
-  const modeBtn = document.querySelector<HTMLButtonElement>('.js-mode')!;
+  const modeBtns = [...document.querySelectorAll<HTMLButtonElement>('.modes [data-mode]')];
   const cursor = document.querySelector<HTMLElement>('.cursor')!;
   const pad = (n: number) => String(n).padStart(3, '0');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -303,6 +328,29 @@ for (let i = 0, k = 0; i < total; k++) {
   );
   tiles.forEach((t) => spy.observe(t));
 
+  // Fill mode: photos fade and rise in gently as they enter the screen (once each)
+  if (!reduce) {
+    const pending = new Set(tiles.values());
+    gsap.set([...pending], { opacity: 0, y: 28 });
+    const reveal = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const t = e.target as HTMLElement;
+          reveal.unobserve(t);
+          pending.delete(t);
+          // pairs in the same row arrive slightly staggered
+          const idx = [...(t.parentElement?.children ?? [])].indexOf(t);
+          gsap.to(t, { opacity: 1, y: 0, duration: 1.1, delay: idx * 0.12, ease: 'power3.out' });
+          const img = t.querySelector('img');
+          if (img) gsap.fromTo(img, { scale: 1.035 }, { scale: 1, duration: 1.6, delay: idx * 0.12, ease: 'power3.out' });
+        });
+      },
+      { rootMargin: '0px 0px -6% 0px' },
+    );
+    pending.forEach((t) => reveal.observe(t));
+  }
+
   const scrollTo = (i: number, smooth = true) =>
     tiles.get(wrap(i))!.scrollIntoView({ behavior: smooth && !reduce ? 'smooth' : 'instant', block: 'center' });
 
@@ -313,8 +361,11 @@ for (let i = 0, k = 0; i < total; k++) {
 
   const setMode = (scroll: boolean) => {
     html.classList.toggle('mode-scroll', scroll);
-    modeBtn.textContent = scroll ? 'Fit' : 'Full';
-    modeBtn.setAttribute('aria-pressed', String(scroll));
+    modeBtns.forEach((b) => {
+      const on = (b.dataset.mode === 'scroll') === scroll;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
     try { localStorage.setItem('ls-mode', scroll ? 'scroll' : 'fit'); } catch (e) {}
     gsap.killTweensOf(imgs);
     gsap.set(imgs, { clearProps: 'opacity,filter' });
@@ -328,7 +379,29 @@ for (let i = 0, k = 0; i < total; k++) {
     }
   };
 
-  modeBtn.addEventListener('click', () => setMode(!isScroll()));
+  /* Full mode: blend only the type that sits over a photo */
+  const overlays = [...document.querySelectorAll<HTMLElement>(
+    '.masthead__name, .masthead__info, .masthead__nav, .modes, .typetest, .corner--bl, .corner--bc, .corner--br',
+  )];
+  const tileEls = [...tiles.values()];
+  let blendQueued = false;
+  const updateBlend = () => {
+    blendQueued = false;
+    const on = isScroll();
+    const boxes = on ? tileEls.map((t) => t.getBoundingClientRect()).filter((r) => r.bottom > 0 && r.top < innerHeight) : [];
+    overlays.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = boxes.some((b) => r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top);
+      el.classList.toggle('on-img', hit);
+    });
+  };
+  const queueBlend = () => { if (!blendQueued) { blendQueued = true; requestAnimationFrame(updateBlend); } };
+  addEventListener('scroll', queueBlend, { passive: true });
+  addEventListener('resize', queueBlend);
+  new MutationObserver(queueBlend).observe(html, { attributes: true, attributeFilter: ['class', 'data-menu', 'data-info'] });
+  queueBlend();
+
+  modeBtns.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode === 'scroll')));
   document.querySelectorAll<HTMLElement>('[data-dir]').forEach((b) =>
     b.addEventListener('click', () => go(Number(b.dataset.dir))),
   );
@@ -375,6 +448,30 @@ for (let i = 0, k = 0; i < total; k++) {
       h.addEventListener('mouseenter', () => gsap.to(cursor, { opacity: 1, duration: 0.2 }));
       h.addEventListener('mouseleave', () => gsap.to(cursor, { opacity: 0, duration: 0.2 }));
     });
+    // Fill mode: "Scroll" label follows the mouse everywhere except over links/buttons
+    let mx = -1, my = -1, shown = false;
+    const showScroll = (on: boolean) => {
+      if (on === shown) return;
+      shown = on;
+      if (on) cursor.textContent = 'Scroll ↓';
+      gsap.to(cursor, { opacity: on ? 1 : 0, duration: 0.2 });
+    };
+    const checkScroll = () => {
+      if (!isScroll() || mx < 0) return showScroll(false);
+      const el = document.elementFromPoint(mx, my);
+      showScroll(!el?.closest('a, button, .corner'));
+    };
+    addEventListener('mousemove', (e) => {
+      mx = e.clientX; my = e.clientY;
+      if (!isScroll()) return;
+      xTo(mx); yTo(my);
+      checkScroll();
+    });
+    addEventListener('scroll', checkScroll, { passive: true });
+    document.addEventListener('mouseleave', () => { mx = -1; showScroll(false); });
+    // on Fill/Fit switch (button or F key) reset the label
+    new MutationObserver(() => { gsap.set(cursor, { opacity: 0 }); shown = false; checkScroll(); })
+      .observe(html, { attributes: true, attributeFilter: ['class'] });
   }
 
   addEventListener('hashchange', () => {
