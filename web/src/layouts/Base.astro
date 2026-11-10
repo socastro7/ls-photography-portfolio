@@ -78,7 +78,8 @@ const nav = [
       <p class="masthead__tag mute">{SITE.tagline.map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>
       <address class="masthead__contact">
         <a class="u-hover" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a><br />
-        <a class="u-hover" href={`mailto:${email}`}>{email}</a>
+        <a class="u-hover" href={`mailto:${email}`}>{email}</a><br />
+        <a class="u-hover" href={SITE.instagram} target="_blank" rel="noopener me">{SITE.igHandle}</a>
       </address>
       </div>
       <nav class="masthead__nav caps" aria-label="Main">
