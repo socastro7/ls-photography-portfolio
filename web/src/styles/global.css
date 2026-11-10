@@ -35,6 +35,9 @@ html[data-type="sans"] .caps { text-transform: uppercase; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.45s; }
 
 html, body { height: 100%; }
+/* Never show a scrollbar (pages still scroll) */
+html { scrollbar-width: none; }
+html::-webkit-scrollbar { display: none; }
 body {
   background: var(--paper);
   color: var(--ink);

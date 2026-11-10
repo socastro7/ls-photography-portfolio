@@ -38,7 +38,7 @@ const nav = [
 ];
 ---
 <!doctype html>
-<html lang="en" data-type="sans" data-menu="corners" data-info="top">
+<html lang="en" data-type="sans" data-menu="corners" data-info="mid">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -71,10 +71,6 @@ const nav = [
       try {
         var t = localStorage.getItem('ls-type');
         if (t && t !== 'serif') document.documentElement.dataset.type = t;
-        var m = localStorage.getItem('ls-menu');
-        if (m === 'corners' || m === 'column') document.documentElement.dataset.menu = m;
-        var f = localStorage.getItem('ls-info');
-        if (f) document.documentElement.dataset.info = f;
       } catch (e) {}
     </script>
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd ? [person, jsonLd] : person)} />
@@ -104,12 +100,6 @@ const nav = [
     <div class="typetest corner" role="group" aria-label="Try typeface">
       <button data-type="sans">Aa sans</button>
       <button data-type="mono">Aa mono</button>
-      <span class="mute" aria-hidden="true">|</span>
-      <button data-menu="corners">Menu A</button>
-      <button data-menu="column">D</button>
-      <span class="mute" aria-hidden="true">|</span>
-      <button data-info="top">Text top</button>
-      <button data-info="mid">mid</button>
     </div>
 
     <style>
