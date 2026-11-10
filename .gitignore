@@ -1,0 +1,11 @@
+# originals (1.8 GB) and transfer zip — kept locally, not versioned
+fotos/
+*.zip
+
+# build / deps
+web/node_modules/
+web/dist/
+web/.astro/
+__pycache__/
+.DS_Store
+Thumbs.db

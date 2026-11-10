@@ -1,0 +1,106 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, WORK, SERIES, src, pad, alt } from '../data/site';
+const counts = Object.fromEntries(SERIES.map((s) => [s, WORK.filter((p) => p.serie === s).length]));
+const series = [...SERIES].sort((a, b) => counts[b] - counts[a]);
+const gallery = {
+  '@context': 'https://schema.org',
+  '@type': 'ImageGallery',
+  name: `${SITE.name} — Index`,
+  author: { '@id': new URL('/#person', Astro.site).href },
+  image: WORK.map((p) => ({
+    '@type': 'ImageObject',
+    contentUrl: new URL(src(p.id, 2400), Astro.site).href,
+    thumbnailUrl: new URL(src(p.id, 640), Astro.site).href,
+    width: p.w,
+    height: p.h,
+    caption: alt(p),
+    creator: { '@type': 'Person', name: SITE.name },
+    copyrightNotice: `© ${SITE.name}`,
+  })),
+};
+---
+<Base title="Index" current="index" description="Index of fashion photographs by Lucila Schuchner — campaigns and editorials for Mariacher, Prüne, Jazmín Chebar, La Rando, L'Officiel and more." jsonLd={gallery}>
+  <aside class="filters" aria-label="Filter by series">
+    <button class="u-hover is-current" data-filter="*">All <span class="mute">{WORK.length}</span></button>
+    {series.map((s) => (
+      <button class="u-hover" data-filter={s}>{s} <span class="mute">{counts[s]}</span></button>
+    ))}
+  </aside>
+
+  <main id="main" class="grid">
+    <h1 class="sr">Index of work</h1>
+    {WORK.map((p, i) => (
+      <a href={`/#${i + 1}`} class="cell" data-serie={p.serie}>
+        <span class="thumb" style={`aspect-ratio:${p.w}/${p.h}`}>
+          <img src={src(p.id, 640)} alt={alt(p)} width={p.w} height={p.h} loading="lazy" decoding="async" />
+        </span>
+        <span class="cell__meta"><span>{pad(i + 1)}</span><span class="mute">{p.serie}</span></span>
+      </a>
+    ))}
+  </main>
+</Base>
+
+<style>
+  .filters {
+    position: fixed;
+    right: var(--gutter);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .filters button { text-align: right; }
+
+  .grid {
+    padding: 70px calc(var(--gutter) + 170px) 90px var(--gutter);
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 60px var(--gutter);
+    align-items: end;
+  }
+  @media (min-width: 1800px) { .grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
+  @media (max-width: 800px) {
+    .filters {
+      position: static;
+      transform: none;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 4px 12px;
+      justify-content: flex-end;
+      padding: 60px var(--gutter) 0;
+    }
+    .grid { padding: 30px var(--gutter) 80px; grid-template-columns: 1fr 1fr; gap: 28px 10px; }
+  }
+
+  .cell { display: flex; flex-direction: column; gap: 6px; }
+  .cell.is-out { display: none; }
+  .thumb { display: block; width: 100%; background: #ebeae6; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .cell__meta { display: flex; justify-content: space-between; gap: 6px; opacity: 0; transition: opacity 0.4s var(--ease); }
+  .cell__meta .mute { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cell:hover .cell__meta, .cell:focus-visible .cell__meta { opacity: 1; }
+  @media (hover: none) { .cell__meta { opacity: 1; } .cell__meta .mute { display: none; } }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+  const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
+  const cells = [...document.querySelectorAll<HTMLElement>('.cell')];
+
+  buttons.forEach((b) =>
+    b.addEventListener('click', () => {
+      const f = b.dataset.filter!;
+      buttons.forEach((x) => x.classList.toggle('is-current', x === b));
+      cells.forEach((c) => c.classList.toggle('is-out', f !== '*' && c.dataset.serie !== f));
+      const shown = cells.filter((c) => !c.classList.contains('is-out'));
+      gsap.fromTo(shown, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.015, ease: 'power2.out' });
+    }),
+  );
+
+  // thumbnails develop in gently, like a contact sheet
+  gsap.from(cells.slice(0, 40), { opacity: 0, duration: 0.9, stagger: 0.02, ease: 'power1.out' });
+</script>

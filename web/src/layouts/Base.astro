@@ -1,0 +1,120 @@
+---
+import '../styles/global.css';
+import { SITE } from '../data/site';
+
+interface Props {
+  title?: string;
+  current?: 'work' | 'index' | 'about';
+  bodyClass?: string;
+  description?: string;
+  image?: string;
+  jsonLd?: Record<string, unknown>;
+}
+const { title, current = 'work', bodyClass = '', description = SITE.description, image = SITE.ogImage, jsonLd } =
+  Astro.props;
+
+const pageTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.role}`;
+const canonical = new URL(Astro.url.pathname.replace(/\/$/, '') || '/', Astro.site);
+const ogImage = new URL(image, Astro.site);
+
+const person = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': new URL('/#person', Astro.site).href,
+  name: SITE.name,
+  jobTitle: SITE.role,
+  nationality: 'Argentine',
+  url: Astro.site?.href,
+  sameAs: [SITE.instagram],
+  ...(SITE.email ? { email: `mailto:${SITE.email}` } : {}),
+};
+
+const nav = [
+  { href: '/', label: 'Work', key: 'work' },
+  { href: '/overview', label: 'Index', key: 'index' },
+  { href: '/about', label: 'About', key: 'about' },
+];
+---
+<!doctype html>
+<html lang="en" data-type="sans">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#f7f6f3" />
+    <meta name="author" content={SITE.name} />
+
+    <meta property="og:type" content={current === 'about' ? 'profile' : 'website'} />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Inter+Tight:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap"
+      rel="stylesheet"
+    />
+    <script is:inline>
+      try {
+        var t = localStorage.getItem('ls-type');
+        if (t) document.documentElement.dataset.type = t;
+      } catch (e) {}
+    </script>
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd ? [person, jsonLd] : person)} />
+    <slot name="head" />
+  </head>
+  <body class={bodyClass}>
+    <a href="#main" class="sr skip">Skip to content</a>
+    <header class="corner corner--tl">
+      <a href="/" class="u-hover" aria-label={`${SITE.name} — home`}>{SITE.name}</a>
+    </header>
+    <nav class="corner corner--tr" aria-label="Main">
+      {nav.map((n) => (
+        <a href={n.href} class:list={['u-hover', { 'is-current': current === n.key }]} aria-current={current === n.key ? 'page' : undefined}>{n.label}</a>
+      ))}
+    </nav>
+
+    <slot />
+
+    <!-- Type tester for the design phase: remove once the typeface is chosen -->
+    <div class="typetest corner" role="group" aria-label="Try typeface">
+      <button data-type="sans">Aa sans</button>
+      <button data-type="serif">Aa serif</button>
+      <button data-type="mono">Aa mono</button>
+    </div>
+
+    <style>
+      .skip:focus { position: fixed; top: 8px; left: 8px; width: auto; height: auto; clip: auto; z-index: 99; background: var(--paper); padding: 6px; }
+      .typetest { left: 50%; top: 0; transform: translateX(-50%); gap: 0.9em; }
+      .typetest button { color: var(--mute); }
+      .typetest button:hover, .typetest button.on { color: var(--ink); }
+      .typetest button[data-type='sans'] { font-family: var(--sans); }
+      .typetest button[data-type='serif'] { font-family: var(--serif); font-style: italic; }
+      .typetest button[data-type='mono'] { font-family: var(--mono); }
+      @media (max-width: 700px) { .typetest { display: none; } }
+    </style>
+    <script>
+      const root = document.documentElement;
+      const btns = document.querySelectorAll<HTMLButtonElement>('.typetest button');
+      const mark = () => btns.forEach((b) => b.classList.toggle('on', b.dataset.type === root.dataset.type));
+      btns.forEach((b) =>
+        b.addEventListener('click', () => {
+          root.dataset.type = b.dataset.type!;
+          try { localStorage.setItem('ls-type', b.dataset.type!); } catch (e) {}
+          mark();
+        }),
+      );
+      mark();
+    </script>
+  </body>
+</html>

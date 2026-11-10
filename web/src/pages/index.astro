@@ -1,0 +1,386 @@
+---
+import Base from '../layouts/Base.astro';
+import { WORK, src, srcset, pad, alt } from '../data/site';
+const total = WORK.length;
+
+// Scroll view rhythm (inspired by editorial layouts): full-bleed, centred, pairs, offsets.
+type Row = { type: 'bleed' | 'wide' | 'pair' | 'tall' | 'offset-l' | 'offset-r'; items: number[] };
+const isLand = (i: number) => WORK[i].w > WORK[i].h * 1.1;
+const rows: Row[] = [];
+for (let i = 0, k = 0; i < total; k++) {
+  if (isLand(i)) {
+    rows.push({ type: k % 3 === 0 ? 'bleed' : 'wide', items: [i] });
+    i++;
+  } else if (i + 1 < total && !isLand(i + 1) && k % 4 !== 1) {
+    rows.push({ type: 'pair', items: [i, i + 1] });
+    i += 2;
+  } else {
+    const singles = ['tall', 'offset-l', 'tall', 'offset-r'] as const;
+    rows.push({ type: singles[k % 4], items: [i] });
+    i++;
+  }
+}
+---
+<Base current="work" bodyClass="is-viewer" description="Selected fashion work by Lucila Schuchner: editorials, campaigns and personal projects on digital and film.">
+  <link slot="head" rel="preload" as="image" imagesrcset={srcset(WORK[0].id)} imagesizes="100vw" fetchpriority="high" />
+  <script is:inline slot="head">
+    (function () {
+      var q = new URLSearchParams(location.search).get('view');
+      var m = q;
+      try { m = q || localStorage.getItem('ls-mode'); } catch (e) {}
+      if (m === 'scroll') document.documentElement.classList.add('mode-scroll');
+    })();
+  </script>
+
+  <main id="main" class="viewer" aria-label="Selected work">
+    <h1 class="sr">Selected work</h1>
+    <div class="viewer__stage">
+      {WORK.map((p, i) => (
+        <figure class="slide" id={`f${i + 1}`} data-i={i} data-serie={p.serie}>
+          <img
+            {...(i === 0
+              ? { src: src(p.id, 1280), srcset: srcset(p.id), fetchpriority: 'high' }
+              : { 'data-src': src(p.id, 1280), 'data-srcset': srcset(p.id) })}
+            sizes="100vw"
+            width={p.w}
+            height={p.h}
+            alt={alt(p)}
+            decoding="async"
+            draggable="false"
+          />
+        </figure>
+      ))}
+    </div>
+    <div class="flow">
+      {rows.map((r) => (
+        <section class:list={['row', `row--${r.type}`]}>
+          <div class="row__imgs">
+            {r.items.map((i) => (
+              <figure class="tile" data-i={i}>
+                <img
+                  src={src(WORK[i].id, r.type === 'bleed' || r.type === 'wide' ? 2400 : 1280)}
+                  srcset={srcset(WORK[i].id)}
+                  sizes={r.type === 'bleed' ? '100vw' : r.type === 'wide' ? '70vw' : r.type === 'pair' ? '50vw' : '60vw'}
+                  width={WORK[i].w}
+                  height={WORK[i].h}
+                  alt={alt(WORK[i])}
+                  loading="lazy"
+                  decoding="async"
+                  style={`aspect-ratio:${WORK[i].w}/${WORK[i].h}`}
+                />
+              </figure>
+            ))}
+          </div>
+          <p class="row__cap">
+            <span>{r.items.map((i) => pad(i + 1)).join(' — ')}</span>
+            <span class="mute">{WORK[r.items[0]].serie}</span>
+          </p>
+        </section>
+      ))}
+    </div>
+    <noscript>
+      <style>.slide{position:static;visibility:visible;height:100svh}</style>
+      {WORK.slice(1).map((p) => <img src={src(p.id, 1280)} alt={alt(p)} width={p.w} height={p.h} loading="lazy" />)}
+    </noscript>
+    <button class="hit hit--prev" data-dir="-1" aria-label="Previous image"></button>
+    <button class="hit hit--next" data-dir="1" aria-label="Next image"></button>
+  </main>
+
+  <div class="corner corner--bl ui">
+    <button class="u-hover" data-dir="-1">Prev</button>
+  </div>
+  <div class="corner corner--bc ui caption" aria-live="polite">
+    <span class="caption__roll"><span class="caption__text">{pad(1)}. {WORK[0].serie}</span></span>
+    <span class="mute caption__count">/ {pad(total)}</span>
+  </div>
+  <div class="corner corner--br ui">
+    <button class="u-hover js-mode" aria-pressed="false">Full</button>
+    <button class="u-hover" data-dir="1">Next</button>
+  </div>
+
+  <div class="cursor ui" aria-hidden="true"></div>
+</Base>
+
+<style is:global>
+  html:not(.mode-scroll) body.is-viewer { overflow: hidden; }
+  /* In scroll mode the type floats over the images, in the corners */
+  html.mode-scroll .corner { color: #fff; mix-blend-mode: difference; }
+  html.mode-scroll .corner .mute { color: #fff; opacity: 0.6; }
+</style>
+
+<style>
+  /* ── Fit: one image at a time ── */
+  .viewer { position: fixed; inset: 0; user-select: none; }
+  .viewer__stage { position: absolute; inset: 0; }
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    place-items: center;
+    padding: 46px var(--gutter);
+    visibility: hidden;
+  }
+  .slide.is-active { visibility: visible; }
+  .slide img {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
+
+  /* ── Full: continuous scroll with an editorial rhythm ── */
+  .flow { display: none; }
+  :global(html.mode-scroll) .viewer { position: static; }
+  :global(html.mode-scroll) .viewer__stage,
+  :global(html.mode-scroll) .hit,
+  :global(html.mode-scroll) .caption { display: none; }
+  :global(html.mode-scroll) .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16vh;
+    padding: 0 0 22vh;
+  }
+  .row { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .row__imgs { display: flex; gap: var(--gutter); width: 100%; justify-content: center; }
+  .tile img { width: 100%; height: auto; background: #ecebe7; }
+  .row__cap { display: flex; gap: 1.4em; }
+
+  /* full-bleed: edge to edge, as big as the screen allows */
+  .row--bleed .tile { width: 100vw; }
+  /* centred landscape */
+  .row--wide .tile { width: min(68vw, 150svh); }
+  /* two verticals side by side */
+  .row--pair .row__imgs { padding: 0 var(--gutter); max-width: 128svh; margin: 0 auto; }
+  .row--pair .tile { flex: 1 1 0; }
+  /* one vertical, 0 → 100vh */
+  .row--tall .tile img { height: 100svh; width: auto; }
+  /* small vertical, pushed to a side */
+  .row--offset-l .row__imgs,
+  .row--offset-r .row__imgs { padding: 0 var(--gutter); }
+  .row--offset-l .row__imgs { justify-content: flex-start; padding-left: 12vw; }
+  .row--offset-r .row__imgs { justify-content: flex-end; padding-right: 12vw; }
+  .row--offset-l .tile, .row--offset-r .tile { width: clamp(220px, 26vw, 46svh); }
+  .row--offset-l { align-items: flex-start; padding-left: calc(12vw + var(--gutter)); }
+  .row--offset-r { align-items: flex-end; padding-right: calc(12vw + var(--gutter)); }
+  .row--offset-l .row__imgs { padding-left: 0; }
+  .row--offset-r .row__imgs { padding-right: 0; }
+  .row:first-child { margin-top: 0; }
+  :global(html.mode-scroll) .row:first-child:not(.row--bleed):not(.row--tall) { margin-top: 18vh; }
+
+  @media (max-width: 700px) {
+    :global(html.mode-scroll) .flow { gap: 10vh; }
+    .row--wide .tile { width: calc(100vw - 2 * var(--gutter)); }
+    .row--tall .tile img { height: auto; width: calc(100vw - 2 * var(--gutter)); }
+    .row--offset-l .tile, .row--offset-r .tile { width: 62vw; }
+    .row--offset-l, .row--offset-r { padding-left: var(--gutter); padding-right: var(--gutter); }
+    .row--offset-l .row__imgs { padding-left: 0; }
+  }
+
+  .hit { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 5; cursor: none; }
+  .hit--prev { left: 0; }
+  .hit--next { right: 0; }
+  @media (hover: none) { .hit { cursor: auto; } }
+
+  .caption { gap: 0.6em; white-space: nowrap; }
+  .caption__roll { display: inline-block; overflow: hidden; height: calc(var(--fs) * var(--lh)); vertical-align: top; }
+  .caption__text { display: inline-block; }
+
+  .cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 40;
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    mix-blend-mode: difference;
+    color: #fff;
+  }
+  @media (hover: none) { .cursor { display: none; } }
+</style>
+
+<script>
+  import { gsap } from 'gsap';
+
+  const html = document.documentElement;
+  const slides = [...document.querySelectorAll<HTMLElement>('.slide')];
+  const imgs = slides.map((s) => s.querySelector('img')!);
+  const total = slides.length;
+  const captionText = document.querySelector<HTMLElement>('.caption__text')!;
+  const modeBtn = document.querySelector<HTMLButtonElement>('.js-mode')!;
+  const cursor = document.querySelector<HTMLElement>('.cursor')!;
+  const pad = (n: number) => String(n).padStart(3, '0');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isScroll = () => html.classList.contains('mode-scroll');
+  const wrap = (i: number) => (i + total) % total;
+
+  const load = (i: number) => {
+    const img = imgs[wrap(i)];
+    if (img.dataset.srcset) {
+      img.srcset = img.dataset.srcset;
+      img.src = img.dataset.src!;
+      delete img.dataset.srcset;
+    }
+    return img;
+  };
+
+  const fromHash = () => {
+    const n = parseInt(location.hash.replace(/\D/g, ''), 10);
+    return Number.isFinite(n) && n >= 1 && n <= total ? n - 1 : 0;
+  };
+
+  let current = fromHash();
+  let busy = false;
+
+  // caption rolls like a counter
+  const setCaption = (i: number, dir = 1, animate = true) => {
+    const label = `${pad(i + 1)}. ${slides[i].dataset.serie}`;
+    if (!animate || reduce) { captionText.textContent = label; return; }
+    gsap.timeline()
+      .to(captionText, { yPercent: -100 * dir, opacity: 0, duration: 0.2, ease: 'power2.in' })
+      .add(() => { captionText.textContent = label; })
+      .fromTo(captionText, { yPercent: 100 * dir, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.35, ease: 'power2.out' });
+  };
+
+  const remember = (i: number) => history.replaceState(null, '', `#${i + 1}`);
+
+  /* ── Fit mode: slider ── */
+  const show = (i: number, dir = 1, instant = false) => {
+    const next = wrap(i);
+    const prevEl = slides[current];
+    const nextEl = slides[next];
+    const img = load(next);
+    load(next + 1);
+    load(next - 1);
+    remember(next);
+
+    if (instant || reduce || prevEl === nextEl) {
+      slides.forEach((s) => s.classList.remove('is-active'));
+      nextEl.classList.add('is-active');
+      setCaption(next, dir, false);
+      current = next;
+      return;
+    }
+
+    busy = true;
+    const oldImg = imgs[current];
+    nextEl.classList.add('is-active');
+    gsap.set(img, { opacity: 0, filter: 'blur(14px)' });
+    gsap.timeline({
+      defaults: { ease: 'power2.out' },
+      onComplete: () => {
+        prevEl.classList.remove('is-active');
+        gsap.set(oldImg, { clearProps: 'opacity,filter' });
+        busy = false;
+      },
+    })
+      .to(oldImg, { opacity: 0, filter: 'blur(8px)', duration: 0.35 }, 0)
+      .to(img, { opacity: 1, filter: 'blur(0px)', duration: 0.8 }, 0.18);
+    setCaption(next, dir);
+    current = next;
+  };
+
+  /* ── Full mode: continuous scroll ── */
+  const tiles = new Map<number, HTMLElement>();
+  document.querySelectorAll<HTMLElement>('.tile').forEach((t) => tiles.set(Number(t.dataset.i), t));
+  const spy = new IntersectionObserver(
+    (entries) => {
+      if (!isScroll()) return;
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        const i = Number((e.target as HTMLElement).dataset.i);
+        if (i === current) return;
+        const dir = i > current ? 1 : -1;
+        current = i;
+        setCaption(i, dir);
+        remember(i);
+      });
+    },
+    { rootMargin: '-45% 0px -45% 0px' },
+  );
+  tiles.forEach((t) => spy.observe(t));
+
+  const scrollTo = (i: number, smooth = true) =>
+    tiles.get(wrap(i))!.scrollIntoView({ behavior: smooth && !reduce ? 'smooth' : 'instant', block: 'center' });
+
+  const go = (dir: number) => {
+    if (isScroll()) scrollTo(current + dir);
+    else if (!busy) show(current + dir, dir);
+  };
+
+  const setMode = (scroll: boolean) => {
+    html.classList.toggle('mode-scroll', scroll);
+    modeBtn.textContent = scroll ? 'Fit' : 'Full';
+    modeBtn.setAttribute('aria-pressed', String(scroll));
+    try { localStorage.setItem('ls-mode', scroll ? 'scroll' : 'fit'); } catch (e) {}
+    gsap.killTweensOf(imgs);
+    gsap.set(imgs, { clearProps: 'opacity,filter' });
+    busy = false;
+    if (scroll) {
+      setCaption(current, 1, false);
+      if (current === 0) window.scrollTo(0, 0); else scrollTo(current, false);
+    } else {
+      window.scrollTo(0, 0);
+      show(current, 1, true);
+    }
+  };
+
+  modeBtn.addEventListener('click', () => setMode(!isScroll()));
+  document.querySelectorAll<HTMLElement>('[data-dir]').forEach((b) =>
+    b.addEventListener('click', () => go(Number(b.dataset.dir))),
+  );
+
+  addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'f') return setMode(!isScroll());
+    if (e.key === 'Escape' && isScroll()) return setMode(false);
+    if (isScroll()) return; // native keyboard scrolling
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft') go(-1);
+  });
+
+  // Fit mode: wheel / trackpad = one step per gesture
+  let wheelLock = 0;
+  addEventListener('wheel', (e) => {
+    if (isScroll()) return;
+    const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    if (Math.abs(d) < 12 || Date.now() < wheelLock) return;
+    wheelLock = Date.now() + 900;
+    go(d > 0 ? 1 : -1);
+  }, { passive: true });
+
+  // Fit mode: swipe
+  let sx = 0, sy = 0;
+  addEventListener('touchstart', (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  addEventListener('touchend', (e) => {
+    if (isScroll()) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
+  });
+
+  // Fit mode: text cursor showing the target frame number
+  if (matchMedia('(hover: hover)').matches) {
+    const xTo = gsap.quickTo(cursor, 'x', { duration: 0.35, ease: 'power3' });
+    const yTo = gsap.quickTo(cursor, 'y', { duration: 0.35, ease: 'power3' });
+    document.querySelectorAll<HTMLElement>('.hit').forEach((h) => {
+      const dir = Number(h.dataset.dir);
+      h.addEventListener('mousemove', (e) => {
+        xTo(e.clientX); yTo(e.clientY);
+        const n = wrap(current + dir) + 1;
+        cursor.textContent = dir < 0 ? `← ${pad(n)}` : `${pad(n)} →`;
+      });
+      h.addEventListener('mouseenter', () => gsap.to(cursor, { opacity: 1, duration: 0.2 }));
+      h.addEventListener('mouseleave', () => gsap.to(cursor, { opacity: 0, duration: 0.2 }));
+    });
+  }
+
+  addEventListener('hashchange', () => {
+    const i = fromHash();
+    if (isScroll()) scrollTo(i); else show(i, i >= current ? 1 : -1);
+  });
+
+  setMode(isScroll());
+</script>

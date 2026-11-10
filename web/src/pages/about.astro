@@ -1,0 +1,122 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../data/site';
+
+// Sourced from the POSTAL POSTAL interview and from logos visible in the portfolio. Confirm with Lucila.
+const clients = ['Jazmín Chebar', 'Adidas', 'Prüne', 'La Rando', 'Mariacher', 'Valentina Schuchner', 'Miista', 'Laagam', 'Sadæls'];
+const press = ["L'Officiel", 'Rolling Stone', 'Crop', 'Postal Postal'];
+
+const profile = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  mainEntity: { '@id': new URL('/#person', Astro.site).href },
+};
+---
+<Base
+  title="About"
+  current="about"
+  jsonLd={profile}
+  description="About Lucila Schuchner, Argentine fashion photographer. Clients include Jazmín Chebar, Adidas, Prüne and La Rando; published in L'Officiel and Rolling Stone."
+>
+  <main id="main" class="about">
+    <figure class="portrait">
+      <!-- Replace with Lucila's portrait (e.g. /public/img/lucila-640.webp) -->
+      <div class="portrait__frame">
+        <span class="portrait__ph mute">Portrait<br />Lucila Schuchner</span>
+      </div>
+    </figure>
+
+    <article class="text">
+      <h1 class="text__title">Between one pose and the next</h1>
+      <p>
+        Lucila Schuchner photographs the moment fashion usually throws away: the gesture that happens between one pose
+        and the next, the blur nobody planned, the frame taken by accident. Her work sits in an in-between place —
+        between the staged and the spontaneous, the produced and the natural — and it is there that an image stops being
+        just a fashion photograph and begins to tell something.
+      </p>
+      <p>
+        She started at twelve, photographing her friends: doing their hair and make-up, inventing characters for them.
+        Trained in Buenos Aires and New York but formed above all by experimentation, she has built a way of seeing in
+        which elegance is not a fixed ideal of beauty but the construction of an identity and a visual world. Dense film
+        colour — interior yellows, electric blues, garden greens — lives alongside an open-grained black and white;
+        near-studio frontal portraits sit next to bodies thrown onto the grass, folded over a table, dissolving into
+        movement.
+      </p>
+      <p>
+        Her recent turn to analogue deepens that ethic: fewer frames, more waiting, more room for error. For her, a
+        photograph can be broken and elegant at the same time.
+      </p>
+      <blockquote class="text__quote">
+        <p>“I like the error, the accidental photo, the unexpected elegance.”</p>
+      </blockquote>
+      <p class="mute">
+        Argentine, currently based in Spain. Editorials, campaigns and personal projects on digital and film.
+      </p>
+    </article>
+
+    <aside class="lists">
+      <section>
+        <h2 class="mute">Clients</h2>
+        <ul>{clients.map((c) => <li>{c}</li>)}</ul>
+      </section>
+      <section>
+        <h2 class="mute">Press</h2>
+        <ul>{press.map((c) => <li>{c}</li>)}</ul>
+      </section>
+      <section>
+        <h2 class="mute">Contact</h2>
+        <address>
+          <ul>
+            {SITE.email && <li><a class="u-hover" href={`mailto:${SITE.email}`}>{SITE.email}</a></li>}
+            <li><a class="u-hover" href={SITE.instagram} target="_blank" rel="noopener me">{SITE.igHandle}</a></li>
+            <li class="mute">{SITE.place}</li>
+          </ul>
+        </address>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="corner corner--bl mute">© {new Date().getFullYear()} {SITE.name}</footer>
+</Base>
+
+<style>
+  .about {
+    min-height: 100svh;
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 34em) 1fr;
+    grid-template-areas: 'portrait text lists';
+    gap: 48px;
+    align-items: center;
+    padding: 90px var(--gutter);
+  }
+  .portrait { grid-area: portrait; justify-self: end; }
+  .portrait__frame {
+    width: clamp(110px, 11vw, 170px);
+    aspect-ratio: 3 / 4;
+    background: #e6e5e1;
+    display: grid;
+    place-items: center;
+  }
+  .portrait__ph { text-align: center; position: relative; z-index: 1; }
+
+  .text { grid-area: text; display: flex; flex-direction: column; gap: 1em; }
+  .text__title { font-size: inherit; font-weight: inherit; margin-bottom: 0.6em; }
+  .text p { hyphens: auto; }
+  .text__quote { font-family: var(--serif); font-style: italic; font-size: 1.25em; line-height: 1.3; margin: 0.6em 0; }
+
+  .lists { grid-area: lists; display: flex; flex-direction: column; gap: 1.6em; align-self: end; }
+  .lists h2 { font-size: inherit; font-weight: inherit; margin-bottom: 0.3em; }
+  address { font-style: normal; }
+
+  @media (max-width: 900px) {
+    .about {
+      grid-template-columns: 1fr;
+      grid-template-areas: 'portrait' 'text' 'lists';
+      align-items: start;
+      padding-top: 70px;
+      padding-bottom: 60px;
+    }
+    .portrait { justify-self: start; }
+    .lists { align-self: start; }
+  }
+</style>

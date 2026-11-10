@@ -1,0 +1,79 @@
+/* ──────────────────────────────────────────────
+   Lucila Schuchner — sistema visual
+   Papel blanco cálido, tinta casi negra, un gris.
+   Todo el texto es chico; las fotos son las que ocupan.
+   ────────────────────────────────────────────── */
+
+:root {
+  --paper: #f7f6f3;
+  --ink: #141414;
+  --mute: #9b9a95;
+
+  --gutter: 14px;
+  --fs: 11px;
+  --lh: 1.35;
+  --track: 0.01em;
+
+  --sans: "Helvetica Neue", Helvetica, "Inter Tight", Arial, sans-serif;
+  --serif: "Newsreader", "Times New Roman", serif;
+  --mono: "DM Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font: var(--sans);
+
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Variantes tipográficas (probador abajo a la izquierda) */
+html[data-type="serif"] { --font: var(--serif); --fs: 12.5px; --track: 0; }
+html[data-type="mono"]  { --font: var(--mono);  --fs: 10.5px; --track: -0.01em; }
+html[data-type="mono"] .caps,
+html[data-type="sans"] .caps { text-transform: uppercase; }
+
+@media (min-width: 1700px) { :root { --fs: 12px; --gutter: 18px; } }
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.45s; }
+
+html, body { height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: var(--fs);
+  line-height: var(--lh);
+  letter-spacing: var(--track);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: inherit; text-decoration: none; }
+a, button { transition: opacity 0.25s var(--ease), color 0.25s var(--ease); }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; letter-spacing: inherit; }
+img { display: block; max-width: 100%; }
+ul { list-style: none; }
+
+.mute { color: var(--mute); }
+.u-hover:hover, a.u-hover:hover { opacity: 0.45; }
+.is-current { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+:focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+
+/* ── Esquinas: el menú vive en los bordes ── */
+.corner {
+  position: fixed;
+  z-index: 30;
+  padding: var(--gutter);
+  display: flex;
+  gap: 1.2em;
+}
+.corner--tl { top: 0; left: 0; }
+.corner--tr { top: 0; right: 0; }
+.corner--bl { bottom: 0; left: 0; }
+.corner--br { bottom: 0; right: 0; }
+.corner--bc { bottom: 0; left: 50%; transform: translateX(-50%); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
