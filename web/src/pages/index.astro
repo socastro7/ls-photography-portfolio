@@ -178,13 +178,19 @@ for (let i = 0, k = 0; i < total; k++) {
   .row:first-child { margin-top: 0; }
   :global(html.mode-scroll) .row:first-child:not(.row--bleed):not(.row--tall) { margin-top: 18vh; }
 
+  /* Mobile: photos reach the screen edges */
   @media (max-width: 700px) {
-    :global(html.mode-scroll) .flow { gap: 10vh; }
-    .row--wide .tile { width: calc(100vw - 2 * var(--gutter)); }
-    .row--tall .tile img { height: auto; width: calc(100vw - 2 * var(--gutter)); }
-    .row--offset-l .tile, .row--offset-r .tile { width: 62vw; }
-    .row--offset-l, .row--offset-r { padding-left: var(--gutter); padding-right: var(--gutter); }
-    .row--offset-l .row__imgs { padding-left: 0; }
+    :global(html.mode-scroll) .flow { gap: 8vh; }
+    .row--wide .tile { width: 100vw; }
+    .row--tall .tile img { height: auto; width: 100vw; }
+    .row--pair .row__imgs { padding: 0; gap: 4px; }
+    /* side verticals: bigger, glued to their edge */
+    .row--offset-l .tile, .row--offset-r .tile { width: 78vw; }
+    .row--offset-l, .row--offset-r { padding-left: 0; padding-right: 0; }
+    .row--offset-l .row__imgs, .row--offset-r .row__imgs { padding: 0; }
+    .row__cap { padding: 0 var(--gutter); }
+    /* Fit: image uses the full width */
+    .slide { padding: 46px 0; }
   }
 
   .hit { position: absolute; top: 0; bottom: 0; width: 50%; z-index: 5; cursor: none; }
