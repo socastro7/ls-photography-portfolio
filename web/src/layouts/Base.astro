@@ -38,7 +38,7 @@ const nav = [
 ];
 ---
 <!doctype html>
-<html lang="en" data-type="sans" data-menu="corners" data-info="mid">
+<html lang="en" data-menu="corners" data-info="mid">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -64,15 +64,9 @@ const nav = [
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400&family=Inter+Tight:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap"
       rel="stylesheet"
     />
-    <script is:inline>
-      try {
-        var t = localStorage.getItem('ls-type');
-        if (t && t !== 'serif') document.documentElement.dataset.type = t;
-      } catch (e) {}
-    </script>
     <script type="application/ld+json" set:html={JSON.stringify(jsonLd ? [person, jsonLd] : person)} />
     <slot name="head" />
   </head>
@@ -96,20 +90,8 @@ const nav = [
 
     <slot />
 
-    <!-- Type tester for the design phase: remove once the typeface is chosen -->
-    <div class="typetest corner" role="group" aria-label="Try typeface">
-      <button data-type="sans">Aa sans</button>
-      <button data-type="mono">Aa mono</button>
-    </div>
-
     <style>
       .skip:focus { position: fixed; top: 8px; left: 8px; width: auto; height: auto; clip: auto; z-index: 99; background: var(--paper); padding: 6px; }
-      .typetest { left: 50%; bottom: 0; transform: translateX(-50%); gap: 0.9em; }
-      .typetest button { color: var(--mute); }
-      .typetest button:hover, .typetest button.on { color: var(--ink); }
-      .typetest button[data-type='sans'] { font-family: var(--sans); }
-      .typetest button[data-type='mono'] { font-family: var(--mono); }
-      @media (max-width: 700px) { .typetest { display: none; } }
 
       /* ── Masthead: name + tagline + menu. Positions switch via html[data-menu] ── */
       .masthead {
@@ -129,7 +111,7 @@ const nav = [
         padding: 0 var(--gutter); margin: 0;
       }
       .masthead__nav { grid-area: nav; display: flex; gap: 1.2em; }
-      .caps { text-transform: uppercase; letter-spacing: 0.04em; }
+      .caps { text-transform: uppercase; }
 
       /* A: menu alone in the top-right corner */
       :global(html[data-menu='corners']) .masthead__nav,
@@ -145,23 +127,5 @@ const nav = [
         :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0; margin: 0; }
       }
     </style>
-    <script>
-      const root = document.documentElement;
-      const btns = document.querySelectorAll<HTMLButtonElement>('.typetest button');
-      const mark = () =>
-        btns.forEach((b) =>
-          b.classList.toggle('on', ['type', 'menu', 'info'].some((k) => b.dataset[k] && b.dataset[k] === root.dataset[k])),
-        );
-      btns.forEach((b) =>
-        b.addEventListener('click', () => {
-          const key = (['type', 'menu', 'info'] as const).find((k) => b.dataset[k])!;
-          const store = `ls-${key}`;
-          root.dataset[key] = b.dataset[key]!;
-          try { localStorage.setItem(store, b.dataset[key]!); } catch (e) {}
-          mark();
-        }),
-      );
-      mark();
-    </script>
   </body>
 </html>

@@ -12,20 +12,16 @@
   --gutter: 14px;
   --fs: 11px;
   --lh: 1.35;
-  --track: 0.01em;
+  --track: 0;
 
   --sans: "Helvetica Neue", Helvetica, "Inter Tight", Arial, sans-serif;
   --serif: "Newsreader", "Times New Roman", serif;
-  --mono: "DM Mono", ui-monospace, "SFMono-Regular", monospace;
   --font: var(--sans);
 
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Variantes tipográficas (probador abajo a la izquierda) */
-html[data-type="mono"]  { --font: var(--mono);  --fs: 10.5px; --track: -0.045em; }
-html[data-type="mono"] .caps,
-html[data-type="sans"] .caps { text-transform: uppercase; }
+.caps { text-transform: uppercase; }
 
 @media (min-width: 1700px) { :root { --fs: 12px; --gutter: 18px; } }
 

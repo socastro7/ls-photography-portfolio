@@ -193,8 +193,6 @@ for (let i = 0, k = 0; i < total; k++) {
   @media (hover: none) { .hit { cursor: auto; } }
 
   .caption { gap: 0.6em; white-space: nowrap; }
-  /* the design tester sits at the bottom centre, so the caption goes one line above it */
-  @media (min-width: 701px) { .caption { bottom: calc(var(--fs) * var(--lh) + 0.3em); } }
   .modes { gap: 0.6em; }
   .modes button { color: var(--mute); }
   .modes button.on { color: var(--ink); }
@@ -377,7 +375,7 @@ for (let i = 0, k = 0; i < total; k++) {
 
   /* Full mode: blend only the type that sits over a photo */
   const overlays = [...document.querySelectorAll<HTMLElement>(
-    '.masthead__name, .masthead__info, .masthead__nav, .modes, .typetest, .corner--bl, .corner--bc, .corner--br',
+    '.masthead__name, .masthead__info, .masthead__nav, .modes, .corner--bl, .corner--bc, .corner--br',
   )];
   const tileEls = [...tiles.values()];
   let blendQueued = false;
