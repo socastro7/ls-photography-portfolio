@@ -29,7 +29,7 @@ const person = {
   ...(SITE.email ? { email: `mailto:${SITE.email}` } : {}),
 };
 
-const { email, phone } = SITE;
+const { phone } = SITE;
 
 const nav = [
   { href: url('/'), label: 'Work', key: 'work' },
@@ -38,7 +38,7 @@ const nav = [
 ];
 ---
 <!doctype html>
-<html lang="en" data-menu="corners" data-info="mid">
+<html lang="en" data-menu="corners" data-info={current === 'index' ? 'bottom' : 'mid'}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -78,10 +78,10 @@ const nav = [
       <p class="masthead__tag mute">{SITE.tagline.map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>
       <address class="masthead__contact">
         <a class="u-hover" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a><br />
-        <a class="u-hover" href={`mailto:${email}`}>{email}</a><br />
         <a class="u-hover" href={SITE.instagram} target="_blank" rel="noopener me">{SITE.igHandle}</a>
       </address>
       </div>
+
       <nav class="masthead__nav caps" aria-label="Main">
         {nav.map((n) => (
           <a href={n.href} class:list={['u-hover', { 'is-current': current === n.key }]} aria-current={current === n.key ? 'page' : undefined}>{n.label}</a>
@@ -111,6 +111,10 @@ const nav = [
         position: fixed; left: 0; top: 50%; transform: translateY(-50%);
         padding: 0 var(--gutter); margin: 0;
       }
+      /* Index page: description + contact in the bottom-left corner */
+      :global(html[data-info='bottom']) .masthead__info {
+        position: fixed; left: 0; bottom: 0; padding: var(--gutter); margin: 0;
+      }
       .masthead__nav { grid-area: nav; display: flex; gap: 1.2em; }
       .caps { text-transform: uppercase; }
 
@@ -125,7 +129,11 @@ const nav = [
       .masthead__nav .is-current { text-underline-offset: 1.5px; }
 
       @media (max-width: 700px) {
-        :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0; margin: 0; }
+        /* Mobile: description + contact, low on the left above Prev / Next */
+        :global(html[data-info='mid']) .masthead__info {
+          top: auto; bottom: calc(var(--gutter) + 2.6em + 60px); transform: none;
+        }
+        :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0.3em; margin: 0; }
       }
     </style>
   </body>

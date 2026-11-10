@@ -21,7 +21,11 @@ const gallery = {
 };
 ---
 <Base title="Index" current="index" description="Index of fashion photographs by Lucila Schuchner — campaigns and editorials for Mariacher, Prüne, Jazmín Chebar, La Rando, L'Officiel and more." jsonLd={gallery}>
-  <aside class="filters" aria-label="Filter by series">
+  <!-- Mobile: opens the series list as an overlay -->
+  <button class="filter-toggle u-hover" aria-expanded="false" aria-controls="filters">
+    <span class="filter-toggle__label">All</span> <span class="mute">+</span>
+  </button>
+  <aside class="filters" id="filters" aria-label="Filter by series">
     <button class="u-hover is-current" data-filter="*">All <span class="mute">{WORK.length}</span></button>
     {series.map((s) => (
       <button class="u-hover" data-filter={s}>{s} <span class="mute">{counts[s]}</span></button>
@@ -56,24 +60,34 @@ const gallery = {
   .filters button { text-align: right; }
 
   .grid {
-    padding: 70px calc(var(--gutter) + 170px) 90px var(--gutter);
+    padding: 70px calc(var(--gutter) + 170px) 170px var(--gutter);
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 60px var(--gutter);
     align-items: end;
   }
   @media (min-width: 1800px) { .grid { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
+  .filter-toggle { display: none; }
   @media (max-width: 800px) {
-    .filters {
-      position: static;
-      transform: none;
-      flex-direction: row;
-      flex-wrap: wrap;
-      gap: 4px 12px;
-      justify-content: flex-end;
-      padding: 60px var(--gutter) 0;
+    /* toggle sits bottom-right, opposite the contact block */
+    .filter-toggle {
+      display: block; position: fixed; right: 0; bottom: 0; z-index: 36;
+      padding: var(--gutter);
     }
-    .grid { padding: 30px var(--gutter) 80px; grid-template-columns: 1fr 1fr; gap: 28px 10px; }
+    /* the list becomes a whitish overlay that blurs the photos behind */
+    .filters {
+      position: fixed; inset: 0; transform: none; z-index: 35;
+      justify-content: center; align-items: center; gap: 0.5em;
+      font-size: calc(var(--fs) + 3px);
+      background: rgba(247, 246, 243, 0.62);
+      -webkit-backdrop-filter: blur(18px) saturate(0.9);
+      backdrop-filter: blur(18px) saturate(0.9);
+      opacity: 0; visibility: hidden;
+      transition: opacity 0.35s var(--ease), visibility 0s linear 0.35s;
+    }
+    .filters.is-open { opacity: 1; visibility: visible; transition: opacity 0.35s var(--ease); }
+    .filters button { text-align: center; }
+    .grid { padding: 80px var(--gutter) 170px; grid-template-columns: 1fr 1fr; gap: 28px 10px; }
   }
 
   .cell { display: flex; flex-direction: column; gap: 6px; }
@@ -91,9 +105,25 @@ const gallery = {
   const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-filter]')];
   const cells = [...document.querySelectorAll<HTMLElement>('.cell')];
 
+  // Mobile overlay
+  const toggle = document.querySelector<HTMLButtonElement>('.filter-toggle')!;
+  const label = toggle.querySelector('.filter-toggle__label')!;
+  const panel = document.querySelector<HTMLElement>('.filters')!;
+  const setOpen = (open: boolean) => {
+    panel.classList.toggle('is-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.querySelector('.mute')!.textContent = open ? '×' : '+';
+    if (open) gsap.fromTo(buttons, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.04, ease: 'power2.out' });
+  };
+  toggle.addEventListener('click', () => setOpen(!panel.classList.contains('is-open')));
+  panel.addEventListener('click', (e) => { if (e.target === panel) setOpen(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') setOpen(false); });
+
   buttons.forEach((b) =>
     b.addEventListener('click', () => {
       const f = b.dataset.filter!;
+      label.textContent = f === '*' ? 'All' : f;
+      if (panel.classList.contains('is-open')) setOpen(false);
       buttons.forEach((x) => x.classList.toggle('is-current', x === b));
       cells.forEach((c) => c.classList.toggle('is-out', f !== '*' && c.dataset.serie !== f));
       const shown = cells.filter((c) => !c.classList.contains('is-out'));

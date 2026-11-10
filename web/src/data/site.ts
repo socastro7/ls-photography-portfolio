@@ -8,7 +8,7 @@ export const SITE = {
   place: 'Buenos Aires — Spain',
   // Short line under the name in the header (design phase: wording TBD).
   // Lines under the name in the header
-  tagline: ['photographer', 'based in Barcelona', 'available for commissions worldwide'],
+  tagline: ['photographer', 'based in Barcelona', 'available for commissions'],
   description:
     'Lucila Schuchner is an Argentine fashion photographer working between the staged and the spontaneous. Editorials, campaigns and personal projects on digital and film.',
   instagram: 'https://www.instagram.com/lucila.schuchner/',
