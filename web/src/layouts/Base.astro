@@ -1,7 +1,6 @@
----
+c---
 import '../styles/global.css';
 import { SITE, url } from '../data/site';
-
 interface Props {
   title?: string;
   current?: 'work' | 'index' | 'about';
@@ -32,9 +31,9 @@ const person = {
 const { phone } = SITE;
 
 const nav = [
-  { href: url('/'), label: 'Work', key: 'work' },
-  { href: url('/overview'), label: 'Index', key: 'index' },
-  { href: url('/about'), label: 'About', key: 'about' },
+  { href: url('/'), label: 'work', key: 'work' },
+  { href: url('/overview'), label: 'index', key: 'index' },
+  { href: url('/about'), label: 'about', key: 'about' },
 ];
 ---
 <!doctype html>
@@ -73,16 +72,17 @@ const nav = [
   <body class={bodyClass}>
     <a href="#main" class="sr skip">Skip to content</a>
     <header class="corner corner--tl masthead">
-      <a href={url('/')} class="u-hover masthead__name caps" aria-label={`${SITE.name} — home`}>{SITE.name}</a>
+      <a href={url('/')} class="u-hover masthead__name" aria-label={`${SITE.name} — home`}>
+        {SITE.name.toLowerCase().split(' ').map((w) => <span>{w}</span>)}
+      </a>
       <div class="masthead__info">
       <p class="masthead__tag mute">{SITE.tagline.map((l, i) => <>{i > 0 && <br />}{l}</>)}</p>
       <address class="masthead__contact">
-        <a class="u-hover" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a><br />
-        <a class="u-hover" href={SITE.instagram} target="_blank" rel="noopener me">{SITE.igHandle}</a>
+        <a class="u-hover" href={`tel:${phone.replace(/\s/g, '')}`}>{phone}</a>
       </address>
       </div>
 
-      <nav class="masthead__nav caps" aria-label="Main">
+      <nav class="masthead__nav" aria-label="Main">
         {nav.map((n) => (
           <a href={n.href} class:list={['u-hover', { 'is-current': current === n.key }]} aria-current={current === n.key ? 'page' : undefined}>{n.label}</a>
         ))}
@@ -103,7 +103,15 @@ const nav = [
         row-gap: 0;
         column-gap: 1.2em;
       }
-      .masthead__name { grid-area: name; }
+      .masthead__name {
+        grid-area: name;
+        display: flex; flex-direction: column;
+        font-weight: 500;
+        font-size: 1.9em;
+        line-height: 0.68;
+        letter-spacing: -0.08em;
+      }
+      .masthead__nav { font-weight: 500; font-size: 15px; }
       .masthead__info { grid-area: info; margin-top: 2.7em; }
       .masthead__contact { margin-top: 1.35em; font-style: normal; }
       /* Description + contact centred on the vertical axis */
@@ -133,7 +141,7 @@ const nav = [
         :global(html[data-info='mid']) .masthead__info {
           top: auto; bottom: calc(var(--gutter) + 2.6em + 60px); transform: none;
         }
-        :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0.3em; margin: 0; }
+        :global(html[data-menu]) .masthead__nav { position: fixed; top: 0; right: 0; padding: var(--gutter); flex-direction: column; align-items: flex-end; gap: 0.05em; margin: 0; }
       }
     </style>
   </body>
