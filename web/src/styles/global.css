@@ -56,7 +56,15 @@ ul { list-style: none; }
 .is-current { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* No visible marks while browsing photos: no tap flash, no blue highlight when
+   clicking quickly. Focus ring only for keyboard (Tab) navigation of menu/links,
+   never inside the photo viewers. */
+html { -webkit-tap-highlight-color: transparent; }
+:focus:not(:focus-visible) { outline: none; }
 :focus-visible { outline: 1px solid var(--ink); outline-offset: 3px; }
+.viewer, .viewer *, .lb, .lb *, img { outline: none !important; }
+a, button, img, .viewer, .lb { -webkit-user-select: none; user-select: none; }
+img { -webkit-user-drag: none; }
 
 /* ── Esquinas: el menú vive en los bordes ── */
 .corner {
